@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -45,6 +45,7 @@ function transform(file, enc, cb) {
           const callee = astPath.get('callee');
           if (
             callee.isIdentifier({name: 'warning'}) ||
+            callee.isIdentifier({name: 'warningWithoutStack'}) ||
             callee.isIdentifier({name: 'lowPriorityWarning'})
           ) {
             const node = astPath.node;
@@ -62,7 +63,12 @@ function transform(file, enc, cb) {
   });
 }
 
-gs(['packages/**/*.js', '!**/__tests__/**/*.js', '!**/__mocks__/**/*.js']).pipe(
+gs([
+  'packages/**/*.js',
+  '!packages/shared/warning.js',
+  '!**/__tests__/**/*.js',
+  '!**/__mocks__/**/*.js',
+]).pipe(
   through.obj(transform, cb => {
     process.stdout.write(
       Array.from(warnings)

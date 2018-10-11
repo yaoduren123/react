@@ -8,7 +8,7 @@ const {join} = require('path');
 const semver = require('semver');
 const {execRead, execUnlessDry, logPromise} = require('../utils');
 
-const push = async ({cwd, dry, packages, version, tag}) => {
+const push = async ({cwd, dry, otp, packages, version, tag}) => {
   const errors = [];
   const isPrerelease = semver.prerelease(version);
   if (tag === undefined) {
@@ -19,10 +19,17 @@ const push = async ({cwd, dry, packages, version, tag}) => {
     throw new Error('The tag `latest` can only be used for stable versions.');
   }
 
+  // Pass two factor auth code if provided:
+  // https://docs.npmjs.com/getting-started/using-two-factor-authentication
+  const twoFactorAuth = otp != null ? `--otp ${otp}` : '';
+
   const publishProject = async project => {
     try {
       const path = join(cwd, 'build', 'node_modules', project);
-      await execUnlessDry(`npm publish --tag ${tag}`, {cwd: path, dry});
+      await execUnlessDry(`npm publish --tag ${tag} ${twoFactorAuth}`, {
+        cwd: path,
+        dry,
+      });
 
       const packagePath = join(
         cwd,
@@ -49,9 +56,7 @@ const push = async ({cwd, dry, packages, version, tag}) => {
         if (remoteVersion !== packageVersion) {
           throw Error(
             chalk`Published version {yellow.bold ${packageVersion}} for ` +
-              chalk`{bold ${project}} but NPM shows {yellow.bold ${
-                remoteVersion
-              }}`
+              chalk`{bold ${project}} but NPM shows {yellow.bold ${remoteVersion}}`
           );
         }
 
@@ -59,7 +64,7 @@ const push = async ({cwd, dry, packages, version, tag}) => {
         // Update the @next tag to also point to it (so @next doesn't lag behind).
         if (!isPrerelease) {
           await execUnlessDry(
-            `npm dist-tag add ${project}@${packageVersion} next`,
+            `npm dist-tag add ${project}@${packageVersion} next ${twoFactorAuth}`,
             {cwd: path, dry}
           );
         }

@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -24,12 +24,16 @@ describe('ReactIncrementalSideEffects', () => {
   });
 
   function div(...children) {
-    children = children.map(c => (typeof c === 'string' ? {text: c} : c));
+    children = children.map(c => (typeof c === 'string' ? text(c) : c));
     return {type: 'div', children, prop: undefined};
   }
 
   function span(prop) {
     return {type: 'span', children: [], prop};
+  }
+
+  function text(t) {
+    return {text: t};
   }
 
   it('can update child nodes of a host instance', () => {
@@ -154,7 +158,7 @@ describe('ReactIncrementalSideEffects', () => {
       }
     }
 
-    function FunctionalComponent(props) {
+    function FunctionComponent(props) {
       return <span prop="Function" />;
     }
 
@@ -164,7 +168,7 @@ describe('ReactIncrementalSideEffects', () => {
           {props.useClass ? (
             <ClassComponent />
           ) : props.useFunction ? (
-            <FunctionalComponent />
+            <FunctionComponent />
           ) : props.useText ? (
             'Text'
           ) : null}
@@ -206,7 +210,7 @@ describe('ReactIncrementalSideEffects', () => {
       }
     }
 
-    function FunctionalComponent(props) {
+    function FunctionComponent(props) {
       return <span prop="Function" />;
     }
 
@@ -216,7 +220,7 @@ describe('ReactIncrementalSideEffects', () => {
           {props.useClass ? (
             <ClassComponent key="a" />
           ) : props.useFunction ? (
-            <FunctionalComponent key="a" />
+            <FunctionComponent key="a" />
           ) : null}
           Trail
         </div>
@@ -238,6 +242,131 @@ describe('ReactIncrementalSideEffects', () => {
     ReactNoop.render(<Foo />);
     ReactNoop.flush();
     expect(ReactNoop.getChildren()).toEqual([div('Trail')]);
+  });
+
+  it('can delete a child when it unmounts inside a portal', () => {
+    function Bar(props) {
+      return <span prop={props.children} />;
+    }
+
+    const portalContainer = ReactNoop.getOrCreateRootContainer(
+      'portalContainer',
+    );
+    function Foo(props) {
+      return ReactNoop.createPortal(
+        props.show ? [<div key="a" />, <Bar key="b">Hello</Bar>, 'World'] : [],
+        portalContainer,
+        null,
+      );
+    }
+
+    ReactNoop.render(
+      <div>
+        <Foo show={true} />
+      </div>,
+    );
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([div()]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([
+      div(),
+      span('Hello'),
+      text('World'),
+    ]);
+
+    ReactNoop.render(
+      <div>
+        <Foo show={false} />
+      </div>,
+    );
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([div()]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([]);
+
+    ReactNoop.render(
+      <div>
+        <Foo show={true} />
+      </div>,
+    );
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([div()]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([
+      div(),
+      span('Hello'),
+      text('World'),
+    ]);
+
+    ReactNoop.render(null);
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([]);
+
+    ReactNoop.render(<Foo show={false} />);
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([]);
+
+    ReactNoop.render(<Foo show={true} />);
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([
+      div(),
+      span('Hello'),
+      text('World'),
+    ]);
+
+    ReactNoop.render(null);
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([]);
+  });
+
+  it('can delete a child when it unmounts with a portal', () => {
+    function Bar(props) {
+      return <span prop={props.children} />;
+    }
+
+    const portalContainer = ReactNoop.getOrCreateRootContainer(
+      'portalContainer',
+    );
+    function Foo(props) {
+      return ReactNoop.createPortal(
+        [<div key="a" />, <Bar key="b">Hello</Bar>, 'World'],
+        portalContainer,
+        null,
+      );
+    }
+
+    ReactNoop.render(
+      <div>
+        <Foo />
+      </div>,
+    );
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([div()]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([
+      div(),
+      span('Hello'),
+      text('World'),
+    ]);
+
+    ReactNoop.render(null);
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([]);
+
+    ReactNoop.render(<Foo />);
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([
+      div(),
+      span('Hello'),
+      text('World'),
+    ]);
+
+    ReactNoop.render(null);
+    ReactNoop.flush();
+    expect(ReactNoop.getChildren()).toEqual([]);
+    expect(ReactNoop.getChildren('portalContainer')).toEqual([]);
   });
 
   it('does not update child nodes if a flush is aborted', () => {
@@ -997,7 +1126,7 @@ describe('ReactIncrementalSideEffects', () => {
       }
     }
 
-    function FunctionalComponent(props) {
+    function FunctionComponent(props) {
       return <span />;
     }
 
@@ -1005,7 +1134,7 @@ describe('ReactIncrementalSideEffects', () => {
       return props.show ? (
         <div>
           <ClassComponent ref={n => ops.push(n)} />
-          <FunctionalComponent ref={n => ops.push(n)} />
+          <FunctionComponent ref={n => ops.push(n)} />
           <div ref={n => ops.push(n)} />
         </div>
       ) : null;
@@ -1013,16 +1142,16 @@ describe('ReactIncrementalSideEffects', () => {
 
     ReactNoop.render(<Foo show={true} />);
     expect(ReactNoop.flush).toWarnDev(
-      'Warning: Stateless function components cannot be given refs. ' +
+      'Warning: Function components cannot be given refs. ' +
         'Attempts to access this ref will fail.\n\nCheck the render method ' +
         'of `Foo`.\n' +
-        '    in FunctionalComponent (at **)\n' +
+        '    in FunctionComponent (at **)\n' +
         '    in div (at **)\n' +
         '    in Foo (at **)',
     );
     expect(ops).toEqual([
       classInstance,
-      // no call for functional components
+      // no call for function components
       div(),
     ]);
 
@@ -1075,7 +1204,7 @@ describe('ReactIncrementalSideEffects', () => {
 
     ReactNoop.render(<Foo />);
     expect(ReactNoop.flush).toWarnDev(
-      'Warning: A string ref, "bar", has been found within a strict mode tree.',
+      'Warning: A string ref, "bar", has been found within a strict mode tree.',
     );
 
     expect(fooInstance.refs.bar.test).toEqual('test');

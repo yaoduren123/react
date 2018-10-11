@@ -35,11 +35,11 @@ class Header extends React.Component {
           <span className="header__logo">
             <img
               src={process.env.PUBLIC_URL + '/react-logo.svg'}
-              alt=""
-              width="32"
-              height="32"
+              alt="React"
+              width="20"
+              height="20"
             />
-            React Sandbox (v{React.version})
+            <a href="/">DOM Test Fixtures (v{React.version})</a>
           </span>
 
           <div className="header-controls">
@@ -48,7 +48,8 @@ class Header extends React.Component {
               <select
                 value={window.location.pathname}
                 onChange={this.handleFixtureChange}>
-                <option value="/">Select a Fixture</option>
+                <option value="/">Home</option>
+                <option value="/hydration">Hydration</option>
                 <option value="/range-inputs">Range Inputs</option>
                 <option value="/text-inputs">Text Inputs</option>
                 <option value="/number-inputs">Number Input</option>
@@ -64,6 +65,9 @@ class Header extends React.Component {
                 <option value="/event-pooling">Event Pooling</option>
                 <option value="/custom-elements">Custom Elements</option>
                 <option value="/media-events">Media Events</option>
+                <option value="/pointer-events">Pointer Events</option>
+                <option value="/mouse-events">Mouse Events</option>
+                <option value="/selection-events">Selection Events</option>
               </select>
             </label>
             <label htmlFor="react_version">

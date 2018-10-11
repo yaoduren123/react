@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2013-present, Facebook, Inc.
+ * Copyright (c) Facebook, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -427,6 +427,8 @@ describe('ReactIncrementalTriangle', () => {
 
     function simulate(...actions) {
       const gen = simulateAndYield();
+      // Call this once to prepare the generator
+      gen.next();
       // eslint-disable-next-line no-for-of-loops/no-for-of-loops
       for (let action of actions) {
         gen.next(action);
